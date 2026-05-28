@@ -13,18 +13,19 @@ const CATEGORIES = [
     checkIds: ['https','privacy','accessibility'] },
 ];
 
-// ── Fetch via dual CORS proxy ─────────────────────────────────────────────────
-// Races two free proxies — whichever responds first wins.
+// ── Fetch via CORS proxy (races 3 independent services) ──────────────────────
 
 async function proxyFetch(url, ms = 15000) {
   const t0 = Date.now();
 
-  const viaCorsproxy = fetch(`https://corsproxy.io/?${encodeURIComponent(url)}`)
+  // corsproxy.io expects the raw URL after "?" — NOT encodeURIComponent
+  const viaCorsproxy = fetch(`https://corsproxy.io/?${url}`)
     .then(async res => {
       if (!res.ok) throw new Error('HTTP ' + res.status);
       return { data: await res.text(), status: res.status, elapsed: Date.now() - t0 };
     });
 
+  // allorigins returns JSON-wrapped response
   const viaAllorigins = fetch(`https://api.allorigins.win/get?url=${encodeURIComponent(url)}`)
     .then(async res => {
       if (!res.ok) throw new Error('HTTP ' + res.status);
@@ -32,13 +33,20 @@ async function proxyFetch(url, ms = 15000) {
       return { data: j.contents || '', status: j.status?.http_code ?? 200, elapsed: Date.now() - t0 };
     });
 
+  // codetabs returns raw response — third independent service
+  const viaCodetabs = fetch(`https://api.codetabs.com/v1/proxy/?quest=${encodeURIComponent(url)}`)
+    .then(async res => {
+      if (!res.ok) throw new Error('HTTP ' + res.status);
+      return { data: await res.text(), status: res.status, elapsed: Date.now() - t0 };
+    });
+
   try {
     return await Promise.race([
-      Promise.any([viaCorsproxy, viaAllorigins]),
+      Promise.any([viaCorsproxy, viaAllorigins, viaCodetabs]),
       new Promise((_, r) => setTimeout(() => r(new Error('timeout')), ms)),
     ]);
   } catch (e) {
-    return { error: e instanceof AggregateError ? 'proxies unavailable' : (e.message || 'timeout'), elapsed: Date.now() - t0 };
+    return { error: e instanceof AggregateError ? 'all proxies failed' : (e.message || 'timeout'), elapsed: Date.now() - t0 };
   }
 }
 
