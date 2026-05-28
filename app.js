@@ -310,6 +310,7 @@ function generateRecs(baseUrl, checks) {
 function setUrl(d) { document.getElementById('urlInput').value = d; document.getElementById('urlInput').focus(); }
 function goBack() { document.getElementById('results').classList.add('hidden'); document.getElementById('landing').classList.remove('hidden'); }
 function colorFor(p) { return p >= 70 ? 'var(--pass)' : p >= 40 ? 'var(--warn)' : 'var(--fail)'; }
+function escHtml(s) { return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
 
 // ── Entry ─────────────────────────────────────────────────────────────────────
 
@@ -455,7 +456,7 @@ function renderRecs({ weeks, quarters, years }) {
       if (rec.note) extra += `<div class="rec-note">${rec.note}</div>`;
       if (rec.subtitle && !rec.code) extra += `<div class="rec-sub">${rec.subtitle}</div>`;
       if (rec.code) {
-        extra += `<div class="rec-code-label">${rec.codeLabel||''}</div><pre class="rec-code">${rec.code}</pre>`;
+        extra += `<div class="rec-code-label">${rec.codeLabel||''}</div><pre class="rec-code">${escHtml(rec.code)}</pre>`;
         if (rec.copyUrl) extra += `<div class="rec-copy-url">Copy → upload to <span>${rec.copyUrl}</span></div>`;
       }
       card.innerHTML = `
