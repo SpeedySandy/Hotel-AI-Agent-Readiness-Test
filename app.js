@@ -13,7 +13,7 @@ const CATEGORIES = [
     checkIds: ['https','privacy','accessibility'] },
 ];
 
-// ── Fetch via dual CORS proxy ───────────────────────────────────────────────────────
+// ── Fetch via dual CORS proxy ─────────────────────────────────────────────────
 // Races two free proxies — whichever responds first wins.
 
 async function proxyFetch(url, ms = 15000) {
