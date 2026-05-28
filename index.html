@@ -17,6 +17,7 @@
     <span class="brand">AGENTCHECK &middot; HOTEL AGENT READINESS</span>
   </header>
 
+  <!-- Landing -->
   <main id="landing" class="landing">
     <div class="hero">
       <h1 class="headline">Is your hotel<br /><em>agent&#8209;ready?</em></h1>
@@ -28,10 +29,8 @@
     </div>
 
     <div class="token-bar">
-      <div class="token-progress">
-        <div class="token-fill" id="tokenFill"></div>
-      </div>
-      <span class="token-label" id="tokenLabel">Loading&hellip;</span>
+      <div class="token-progress"><div class="token-fill" id="tokenFill"></div></div>
+      <span class="token-label-text" id="tokenLabel">Loading&hellip;</span>
     </div>
 
     <div class="input-row">
@@ -49,33 +48,58 @@
     </div>
   </main>
 
+  <!-- Results -->
   <section id="results" class="results hidden">
-    <div class="results-header">
-      <button class="back-btn" onclick="goBack()">&larr; Check another</button>
-      <div class="score-block">
-        <div class="score-circle" id="scoreCircle">
-          <span class="score-pct" id="scorePct">0</span>
-          <span class="score-slash">/100</span>
-        </div>
-        <div class="score-info">
-          <div class="grade-badge" id="gradeBadge">—</div>
-          <div class="checked-url" id="checkedUrl"></div>
-        </div>
+    <button class="back-btn" onclick="goBack()">&larr; Check another</button>
+
+    <div class="results-hero">
+      <div class="score-circle" id="scoreCircle">
+        <span class="score-pct" id="scorePct">0</span>
+        <span class="score-slash">/100</span>
+      </div>
+      <div class="results-hero-info">
+        <div class="grade-badge" id="gradeBadge">&mdash;</div>
+        <div class="checked-url" id="checkedUrlText"></div>
+        <p class="summary-text" id="summaryText"></p>
       </div>
     </div>
-    <div class="checks-grid" id="checksGrid"></div>
-    <div class="token-bar results-token">
-      <div class="token-progress">
-        <div class="token-fill" id="tokenFillResults"></div>
+
+    <div class="live-checks-box">
+      <h4 class="live-checks-title">Live checks</h4>
+      <div id="liveCheckResults"></div>
+    </div>
+
+    <div class="category-grid" id="categoryGrid"></div>
+
+    <div class="detailed-results">
+      <h3 class="section-title">Detailed results</h3>
+      <div class="detail-legend">
+        <span class="legend-item legend-live">&#10003; Live<span class="legend-sub">HTTP verified</span></span>
+        <span class="legend-item legend-est">~ Estimated<span class="legend-sub">AI inference</span></span>
+        <span class="legend-item legend-skip">&mdash; Skipped<span class="legend-sub">needs manual check</span></span>
       </div>
-      <span class="token-label" id="tokenLabelResults"></span>
+      <div id="checksDetail"></div>
+    </div>
+
+    <div class="rec-section">
+      <h3 class="section-title">What to do next</h3>
+      <div id="recommendations"></div>
+    </div>
+
+    <div class="revenue-section" id="revenueSection"></div>
+
+    <div class="token-bar results-token">
+      <div class="token-progress"><div class="token-fill" id="tokenFillResults"></div></div>
+      <span class="token-label-text" id="tokenLabelResults"></span>
     </div>
   </section>
 
+  <!-- Loading overlay -->
   <div id="loadingOverlay" class="loading-overlay hidden">
     <div class="spinner"></div>
-    <p class="loading-text">Analyzing <span id="loadingUrl"></span>&hellip;</p>
+    <p class="loading-text">Analyzing <strong id="loadingUrl"></strong>&hellip;</p>
     <p class="loading-sub">Running live HTTP checks</p>
+    <div class="loading-checks" id="loadingChecks"></div>
   </div>
 
   <footer class="footer">
