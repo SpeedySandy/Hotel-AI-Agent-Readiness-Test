@@ -1,9 +1,3 @@
-const CORS_PROXY = 'https://api.allorigins.win/get?url=';
-const CHECKS_PER_TOKEN = 5;
-
-let currentToken = null;
-let checksRemaining = 0;
-
 const CATEGORIES = [
   { id: 'foundation',      name: 'Foundation',             icon: '◈', weight: 0.10,
     checkIds: ['robots','llms','sitemap','markdown'] },
@@ -19,62 +13,32 @@ const CATEGORIES = [
     checkIds: ['https','privacy','accessibility'] },
 ];
 
-// ── Token ─────────────────────────────────────────────────────────────────────
+// ── Fetch via dual CORS proxy ───────────────────────────────────────────────────────
+// Races two free proxies — whichever responds first wins.
 
-function initToken() {
-  const params = new URLSearchParams(window.location.search);
-  const urlToken = params.get('t');
-  if (urlToken) {
-    currentToken = urlToken;
-    if (localStorage.getItem('hac-' + urlToken) === null)
-      localStorage.setItem('hac-' + urlToken, CHECKS_PER_TOKEN);
-  } else {
-    const stored = localStorage.getItem('hac-token');
-    if (stored && localStorage.getItem('hac-' + stored) !== null) {
-      currentToken = stored;
-    } else {
-      currentToken = Array.from(crypto.getRandomValues(new Uint8Array(5))).map(b => b.toString(16).padStart(2,'0')).join('');
-      localStorage.setItem('hac-token', currentToken);
-      localStorage.setItem('hac-' + currentToken, CHECKS_PER_TOKEN);
-    }
-    window.history.replaceState({}, '', '?t=' + currentToken);
-  }
-  checksRemaining = parseInt(localStorage.getItem('hac-' + currentToken) || '0');
-  updateTokenUI();
-}
-
-function consumeCheck() {
-  if (checksRemaining <= 0) return false;
-  checksRemaining--;
-  localStorage.setItem('hac-' + currentToken, checksRemaining);
-  return true;
-}
-
-function updateTokenUI() {
-  const pct = (checksRemaining / CHECKS_PER_TOKEN) * 100;
-  document.querySelectorAll('.token-fill').forEach(el => el.style.width = pct + '%');
-  const label = `${checksRemaining} of ${CHECKS_PER_TOKEN} checks remaining on your link`;
-  document.querySelectorAll('.token-label-text').forEach(el => el.textContent = label);
-  const btn = document.getElementById('checkBtn');
-  if (checksRemaining <= 0) { btn.disabled = true; btn.textContent = 'No checks left'; }
-  else { btn.disabled = false; btn.textContent = 'Check →'; }
-}
-
-// ── Fetch ─────────────────────────────────────────────────────────────────────
-
-async function proxyFetch(url, ms = 12000) {
+async function proxyFetch(url, ms = 15000) {
   const t0 = Date.now();
+
+  const viaCorsproxy = fetch(`https://corsproxy.io/?${encodeURIComponent(url)}`)
+    .then(async res => {
+      if (!res.ok) throw new Error('HTTP ' + res.status);
+      return { data: await res.text(), status: res.status, elapsed: Date.now() - t0 };
+    });
+
+  const viaAllorigins = fetch(`https://api.allorigins.win/get?url=${encodeURIComponent(url)}`)
+    .then(async res => {
+      if (!res.ok) throw new Error('HTTP ' + res.status);
+      const j = await res.json();
+      return { data: j.contents || '', status: j.status?.http_code ?? 200, elapsed: Date.now() - t0 };
+    });
+
   try {
-    const res = await Promise.race([
-      fetch(CORS_PROXY + encodeURIComponent(url)),
+    return await Promise.race([
+      Promise.any([viaCorsproxy, viaAllorigins]),
       new Promise((_, r) => setTimeout(() => r(new Error('timeout')), ms)),
     ]);
-    const elapsed = Date.now() - t0;
-    if (!res.ok) return { error: 'HTTP ' + res.status, status: res.status, elapsed };
-    const json = await res.json();
-    return { data: json.contents || '', status: json.status?.http_code ?? 200, elapsed };
   } catch (e) {
-    return { error: e.message, elapsed: Date.now() - t0 };
+    return { error: e instanceof AggregateError ? 'proxies unavailable' : (e.message || 'timeout'), elapsed: Date.now() - t0 };
   }
 }
 
@@ -315,7 +279,6 @@ function escHtml(s) { return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;'
 // ── Entry ─────────────────────────────────────────────────────────────────────
 
 document.addEventListener('DOMContentLoaded', () => {
-  initToken();
   document.getElementById('urlInput').addEventListener('keydown', e => { if (e.key === 'Enter') runCheck(); });
 });
 
@@ -323,11 +286,9 @@ async function runCheck() {
   const input = document.getElementById('urlInput');
   const raw   = input.value.trim();
   if (!raw) { input.focus(); return; }
-  if (checksRemaining <= 0) { alert('No checks remaining on this link.'); return; }
 
   const baseUrl = normalizeUrl(raw);
   if (!baseUrl) { alert('Invalid URL'); return; }
-  if (!consumeCheck()) return;
 
   document.getElementById('loadingUrl').textContent = baseUrl.replace(/^https?:\/\//,'');
   const LC = document.getElementById('loadingChecks');
@@ -347,7 +308,8 @@ async function runCheck() {
   });
 
   document.getElementById('loadingOverlay').classList.remove('hidden');
-  document.getElementById('checkBtn').disabled = true;
+  const btn = document.getElementById('checkBtn');
+  btn.disabled = true;
 
   try {
     const checks = await runChecks(baseUrl);
@@ -360,11 +322,9 @@ async function runCheck() {
     renderResults({ url: baseUrl, checks, percentage, grade, gradeLabel, catResults, summary, recs });
   } catch (err) {
     alert('Check failed: ' + err.message);
-    checksRemaining++;
-    localStorage.setItem('hac-' + currentToken, checksRemaining);
   } finally {
     document.getElementById('loadingOverlay').classList.add('hidden');
-    updateTokenUI();
+    btn.disabled = false;
   }
 }
 
