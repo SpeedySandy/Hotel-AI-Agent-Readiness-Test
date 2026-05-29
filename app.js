@@ -1,3 +1,56 @@
+// ── Configuration ────────────────────────────────────────────────────────────
+// After deploying gas-backend.js to Google Apps Script, paste the web app URL:
+const LEADS_ENDPOINT   = ''; // 'https://script.google.com/macros/s/YOUR_ID/exec'
+const OWNER_EMAIL      = 'sandro.testafori@oracle.com';
+const OWNER_NAME       = 'Sandro Testafori';
+const OWNER_TITLE      = 'Account Manager · Oracle Hospitality';
+
+// ── User / registration ───────────────────────────────────────────────────────
+
+function getUser() {
+  try { return JSON.parse(localStorage.getItem('agentcheck_user') || 'null'); }
+  catch { return null; }
+}
+
+function showRegModal() {
+  const m = document.getElementById('regModal');
+  if (m) { m.classList.remove('hidden'); document.getElementById('regName').focus(); }
+}
+
+function registerUser() {
+  const email   = (document.getElementById('regEmail').value || '').trim();
+  const name    = (document.getElementById('regName').value || '').trim();
+  const company = (document.getElementById('regCompany').value || '').trim();
+  const role    = (document.getElementById('regRole').value || '').trim();
+
+  const emailEl = document.getElementById('regEmail');
+  emailEl.classList.remove('input-error');
+  if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+    emailEl.classList.add('input-error');
+    emailEl.focus();
+    return;
+  }
+
+  const user = { email, name, company, role, ts: Date.now() };
+  localStorage.setItem('agentcheck_user', JSON.stringify(user));
+  postLead(user);
+  document.getElementById('regModal').classList.add('hidden');
+
+  const url = document.getElementById('urlInput').value.trim();
+  if (url) runCheck();
+}
+
+function postLead(data) {
+  if (!LEADS_ENDPOINT) return;
+  fetch(LEADS_ENDPOINT, {
+    method: 'POST', mode: 'no-cors',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ ...data, source: location.hostname }),
+  }).catch(() => {});
+}
+
+// ── Categories ────────────────────────────────────────────────────────────────
+
 const CATEGORIES = [
   { id: 'foundation',      name: 'Foundation',             icon: '◈', weight: 0.10,
     checkIds: ['robots','llms','sitemap','markdown'] },
@@ -18,14 +71,12 @@ const CATEGORIES = [
 async function proxyFetch(url, ms = 15000) {
   const t0 = Date.now();
 
-  // corsproxy.io expects the raw URL after "?" — NOT encodeURIComponent
   const viaCorsproxy = fetch(`https://corsproxy.io/?${url}`)
     .then(async res => {
       if (!res.ok) throw new Error('HTTP ' + res.status);
       return { data: await res.text(), status: res.status, elapsed: Date.now() - t0 };
     });
 
-  // allorigins returns JSON-wrapped response
   const viaAllorigins = fetch(`https://api.allorigins.win/get?url=${encodeURIComponent(url)}`)
     .then(async res => {
       if (!res.ok) throw new Error('HTTP ' + res.status);
@@ -33,7 +84,6 @@ async function proxyFetch(url, ms = 15000) {
       return { data: j.contents || '', status: j.status?.http_code ?? 200, elapsed: Date.now() - t0 };
     });
 
-  // codetabs returns raw response — third independent service
   const viaCodetabs = fetch(`https://api.codetabs.com/v1/proxy/?quest=${encodeURIComponent(url)}`)
     .then(async res => {
       if (!res.ok) throw new Error('HTTP ' + res.status);
@@ -291,6 +341,8 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 
 async function runCheck() {
+  if (!getUser()) { showRegModal(); return; }
+
   const input = document.getElementById('urlInput');
   const raw   = input.value.trim();
   if (!raw) { input.focus(); return; }
@@ -328,6 +380,7 @@ async function runCheck() {
     const recs    = generateRecs(baseUrl, checks);
 
     renderResults({ url: baseUrl, checks, percentage, grade, gradeLabel, catResults, summary, recs });
+    postLead({ ...getUser(), hotelUrl: baseUrl, score: percentage, grade });
   } catch (err) {
     alert('Check failed: ' + err.message);
   } finally {
@@ -404,9 +457,51 @@ function renderResults({ url, checks, percentage, grade, gradeLabel, catResults,
       <div class="metric"><div class="metric-val">${gap} pts</div><div class="metric-label">gap to Agent-Ready</div></div>
     </div>`;
 
+  document.getElementById('oracleCtaSection').innerHTML = buildOracleCta(url, checks, percentage);
   document.getElementById('landing').classList.add('hidden');
   document.getElementById('results').classList.remove('hidden');
   window.scrollTo(0,0);
+}
+
+function buildOracleCta(url, checks, percentage) {
+  const user   = getUser();
+  const domain = new URL(url).hostname.replace(/^www\./, '');
+  const byId   = Object.fromEntries(checks.map(c => [c.id, c]));
+  const gaps   = checks.filter(c => c.status === 'fail').length;
+
+  const caps = [
+    byId['ucp']?.status !== 'pass'              && 'Certified Google UCP integration — native in Opera Cloud',
+    byId['availability-api']?.status !== 'pass' && 'Real-time availability APIs via Oracle Distribution Services',
+    (byId['schema-hotel']?.status !== 'pass' ||
+     byId['schema-room']?.status !== 'pass')    && 'Auto-publish Hotel & Room schema from your PMS data',
+    byId['direct-booking']?.status !== 'pass'   && 'Direct booking engine with Best Rate Guarantee tools',
+    byId['payment']?.status !== 'pass'          && 'Oracle Payment Interface (OPI) — multi-gateway, PCI-ready',
+    byId['faq-schema']?.status !== 'pass'       && 'AI-readable guest FAQ via Oracle Experience Cloud',
+  ].filter(Boolean);
+
+  const userName = user?.name || '';
+  const subj = encodeURIComponent(`Hotel AI Readiness — ${domain} — ${percentage}/100`);
+  const body = encodeURIComponent(
+    `Hi Sandro,\n\nI just used the Oracle Hotel AI Readiness Checker to analyse ${url}.\n\nScore: ${percentage}/100 · ${gaps} gaps found\n\nI'd love to learn how Oracle Opera Cloud can help us close these gaps.\n\nBest regards,\n${userName}`
+  );
+
+  const capsHtml = caps.length
+    ? `<ul class="oracle-caps">${caps.map(c => `<li>${c}</li>`).join('')}</ul>`
+    : '';
+
+  return `
+    <div class="oracle-cta-box">
+      <div class="oracle-cta-inner">
+        <div class="oracle-wordmark">ORACLE HOSPITALITY</div>
+        <h3 class="oracle-cta-heading">Close the gap with Opera Cloud</h3>
+        <p class="oracle-cta-body">Oracle Opera Cloud directly addresses ${gaps} of the ${checks.filter(c=>c.status!=='skip').length} verifiable gaps found above${caps.length ? ':' : '.'}</p>
+        ${capsHtml}
+        <a class="oracle-cta-btn" href="mailto:${OWNER_EMAIL}?subject=${subj}&body=${body}">
+          &#9993;&nbsp; Book a 30-min call with Sandro
+        </a>
+        <p class="oracle-contact">${OWNER_NAME} &middot; ${OWNER_TITLE} &middot; <a href="mailto:${OWNER_EMAIL}">${OWNER_EMAIL}</a></p>
+      </div>
+    </div>`;
 }
 
 function renderRecs({ weeks, quarters, years }) {

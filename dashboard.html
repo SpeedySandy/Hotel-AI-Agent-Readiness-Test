@@ -1,0 +1,240 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>AgentCheck — Leads Dashboard</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet" />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --bg: #071510; --card: #0f241a; --card-border: #1a3828;
+      --accent: #4ee8b4; --text: #e8ede9; --muted: #7a9984;
+      --pass: #4ee8b4; --warn: #f5c842; --fail: #e85b4e;
+      --oracle-red: #e83737; --font: 'Inter', system-ui, sans-serif;
+    }
+    body { background: var(--bg); color: var(--text); font-family: var(--font); font-size: 15px; min-height: 100vh; }
+    .login-wrap { min-height: 100vh; display: flex; align-items: center; justify-content: center; padding: 24px; }
+    .login-card { background: var(--card); border: 1px solid var(--card-border); border-radius: 16px; padding: 44px 36px; max-width: 380px; width: 100%; text-align: center; }
+    .login-logo { font-size: 0.68rem; font-weight: 800; letter-spacing: 0.22em; color: var(--oracle-red); margin-bottom: 20px; }
+    .login-title { font-size: 1.4rem; font-weight: 700; color: #fff; margin-bottom: 8px; }
+    .login-sub { font-size: 0.85rem; color: var(--muted); margin-bottom: 28px; }
+    .login-input { width: 100%; background: rgba(255,255,255,0.05); border: 1px solid var(--card-border); border-radius: 8px; color: var(--text); padding: 13px 16px; font-size: 0.92rem; font-family: var(--font); outline: none; margin-bottom: 12px; caret-color: var(--accent); transition: border-color 0.2s; }
+    .login-input:focus { border-color: var(--accent); }
+    .login-btn { width: 100%; background: var(--accent); color: #071510; border: none; border-radius: 8px; padding: 13px; font-size: 0.95rem; font-weight: 600; cursor: pointer; font-family: var(--font); transition: background 0.2s; }
+    .login-btn:hover { background: #3dd4a0; }
+    .login-error { font-size: 0.8rem; color: var(--fail); margin-top: 10px; display: none; }
+    .dash-wrap { max-width: 1100px; margin: 0 auto; padding: 32px 24px 60px; }
+    .dash-header { display: flex; align-items: center; justify-content: space-between; gap: 16px; margin-bottom: 28px; flex-wrap: wrap; }
+    .dash-logo { font-size: 0.68rem; font-weight: 800; letter-spacing: 0.22em; color: var(--oracle-red); }
+    .dash-title { font-size: 1.3rem; font-weight: 700; color: #fff; margin-top: 2px; }
+    .dash-actions { display: flex; gap: 10px; flex-wrap: wrap; }
+    .btn-outline { background: transparent; border: 1px solid var(--card-border); color: var(--muted); border-radius: 8px; padding: 8px 16px; font-size: 0.82rem; cursor: pointer; font-family: var(--font); transition: all 0.2s; }
+    .btn-outline:hover { color: var(--text); border-color: var(--muted); }
+    .btn-primary { background: var(--oracle-red); border: none; color: #fff; border-radius: 8px; padding: 8px 16px; font-size: 0.82rem; font-weight: 600; cursor: pointer; font-family: var(--font); transition: background 0.2s; }
+    .btn-primary:hover { background: #c42e2e; }
+    .stats-row { display: flex; gap: 14px; flex-wrap: wrap; margin-bottom: 24px; }
+    .stat-card { background: var(--card); border: 1px solid var(--card-border); border-radius: 12px; padding: 16px 20px; flex: 1; min-width: 120px; }
+    .stat-val { font-size: 1.8rem; font-weight: 700; color: var(--accent); line-height: 1; margin-bottom: 4px; }
+    .stat-lbl { font-size: 0.72rem; color: var(--muted); }
+    .filter-bar { display: flex; gap: 10px; margin-bottom: 16px; flex-wrap: wrap; }
+    .filter-input { flex: 1; min-width: 180px; background: var(--card); border: 1px solid var(--card-border); border-radius: 8px; color: var(--text); padding: 9px 14px; font-size: 0.85rem; font-family: var(--font); outline: none; transition: border-color 0.2s; }
+    .filter-input:focus { border-color: var(--accent); }
+    .table-wrap { background: var(--card); border: 1px solid var(--card-border); border-radius: 14px; overflow: hidden; }
+    table { width: 100%; border-collapse: collapse; font-size: 0.82rem; }
+    thead { background: rgba(255,255,255,0.03); }
+    th { text-align: left; padding: 11px 14px; font-size: 0.7rem; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); border-bottom: 1px solid var(--card-border); cursor: pointer; user-select: none; white-space: nowrap; }
+    th:hover { color: var(--text); }
+    td { padding: 11px 14px; border-bottom: 1px solid rgba(255,255,255,0.04); vertical-align: top; }
+    tr:last-child td { border-bottom: none; }
+    tr:hover td { background: rgba(255,255,255,0.02); }
+    .score-pill { display: inline-block; padding: 2px 8px; border-radius: 100px; font-size: 0.72rem; font-weight: 600; }
+    .score-high { background: rgba(78,232,180,0.15); color: var(--pass); }
+    .score-mid  { background: rgba(245,200,66,0.15);  color: var(--warn); }
+    .score-low  { background: rgba(232,91,78,0.15);   color: var(--fail); }
+    .td-email { color: var(--accent); font-weight: 500; }
+    .td-url   { color: var(--muted); font-size: 0.78rem; word-break: break-all; }
+    .td-date  { color: var(--muted); font-size: 0.76rem; white-space: nowrap; }
+    .empty-state { padding: 48px 24px; text-align: center; color: var(--muted); }
+    .empty-icon  { font-size: 2rem; margin-bottom: 12px; }
+    .empty-title { font-size: 1rem; font-weight: 600; color: var(--text); margin-bottom: 8px; }
+    .empty-sub   { font-size: 0.85rem; line-height: 1.6; }
+    .setup-code  { display: inline-block; background: rgba(0,0,0,0.3); border: 1px solid var(--card-border); border-radius: 6px; padding: 4px 10px; font-family: monospace; font-size: 0.8rem; color: var(--accent); margin: 4px 0; }
+    .setup-steps { background: var(--card); border: 1px solid var(--card-border); border-radius: 12px; padding: 24px 28px; margin-bottom: 24px; }
+    .setup-steps h3 { font-size: 0.95rem; font-weight: 600; color: #fff; margin-bottom: 14px; }
+    .setup-steps ol { padding-left: 18px; }
+    .setup-steps li { font-size: 0.85rem; color: #b8d4c4; line-height: 1.7; margin-bottom: 6px; }
+    .setup-steps a { color: var(--accent); }
+    .hidden { display: none !important; }
+    @media (max-width: 600px) {
+      td:nth-child(5), th:nth-child(5), td:nth-child(6), th:nth-child(6) { display: none; }
+    }
+  </style>
+</head>
+<body>
+
+<div id="loginSection" class="login-wrap">
+  <div class="login-card">
+    <div class="login-logo">&#9711; ORACLE HOSPITALITY</div>
+    <h1 class="login-title">Leads Dashboard</h1>
+    <p class="login-sub">AgentCheck &mdash; Hotel AI Readiness Checker</p>
+    <input type="password" id="dashPwd" class="login-input" placeholder="Password" autocomplete="current-password" />
+    <button class="login-btn" onclick="loadLeads()">Sign in &rarr;</button>
+    <p class="login-error" id="loginError">Incorrect password</p>
+  </div>
+</div>
+
+<div id="dashSection" class="hidden">
+  <div class="dash-wrap">
+    <div class="dash-header">
+      <div>
+        <div class="dash-logo">&#9711; ORACLE HOSPITALITY &mdash; AGENTCHECK</div>
+        <div class="dash-title">Leads Dashboard</div>
+      </div>
+      <div class="dash-actions">
+        <button class="btn-outline" onclick="refreshLeads()">&#8635; Refresh</button>
+        <button class="btn-primary"  onclick="exportCsv()">&#11015; Export CSV</button>
+        <button class="btn-outline"  onclick="signOut()">Sign out</button>
+      </div>
+    </div>
+
+    <div id="setupGuide" class="setup-steps hidden">
+      <h3>&#9888; Backend not configured &mdash; setup guide</h3>
+      <ol>
+        <li>Open <a href="https://script.google.com" target="_blank">script.google.com</a> and create a new project.</li>
+        <li>Paste the contents of <span class="setup-code">gas-backend.js</span> from this repo.</li>
+        <li>Create a Google Sheet, copy its ID from the URL, and set <span class="setup-code">SPREADSHEET_ID</span> in the script.</li>
+        <li>Deploy: <em>Deploy &rarr; New Deployment &rarr; Web App</em> &mdash; execute as <em>Me</em>, access <em>Anyone</em>.</li>
+        <li>Copy the deployed URL and set it as <span class="setup-code">LEADS_ENDPOINT</span> in both <span class="setup-code">app.js</span> and this dashboard page.</li>
+      </ol>
+    </div>
+
+    <div class="stats-row" id="statsRow"></div>
+    <div class="filter-bar">
+      <input type="text" class="filter-input" id="filterInput" placeholder="Search by email, name, hotel, or URL…" oninput="applyFilter()" />
+    </div>
+    <div class="table-wrap">
+      <div id="tableContainer"></div>
+    </div>
+  </div>
+</div>
+
+<script>
+const LEADS_ENDPOINT     = ''; // same URL as in app.js
+const DASHBOARD_PASSWORD = 'oracle2024'; // same as in gas-backend.js
+
+let allLeads = [];
+let sortKey  = 'Timestamp';
+let sortAsc  = false;
+
+document.getElementById('dashPwd').addEventListener('keydown', e => { if (e.key === 'Enter') loadLeads(); });
+
+function loadLeads() {
+  const pwd = document.getElementById('dashPwd').value;
+  if (pwd !== DASHBOARD_PASSWORD) {
+    document.getElementById('loginError').style.display = 'block';
+    return;
+  }
+  document.getElementById('loginSection').classList.add('hidden');
+  document.getElementById('dashSection').classList.remove('hidden');
+  fetchLeads();
+}
+
+function fetchLeads() {
+  if (!LEADS_ENDPOINT) {
+    document.getElementById('setupGuide').classList.remove('hidden');
+    renderTable([]); renderStats([]);
+    return;
+  }
+  const cb = 'gcb' + Date.now();
+  window[cb] = function(data) {
+    if (data.error) { renderTable([]); return; }
+    allLeads = (data.leads || []).filter(r => r.Email).reverse();
+    renderStats(allLeads);
+    applyFilter();
+    delete window[cb];
+  };
+  const s = document.createElement('script');
+  s.src = `${LEADS_ENDPOINT}?password=${encodeURIComponent(DASHBOARD_PASSWORD)}&callback=${cb}`;
+  s.onerror = () => { document.getElementById('setupGuide').classList.remove('hidden'); renderTable([]); };
+  document.body.appendChild(s);
+}
+
+function refreshLeads() { fetchLeads(); }
+
+function renderStats(leads) {
+  const total      = leads.length;
+  const withScore  = leads.filter(l => l.Score);
+  const avgScore   = withScore.length ? Math.round(withScore.reduce((s,l) => s + Number(l.Score||0), 0) / withScore.length) : 0;
+  const today      = leads.filter(l => new Date(l.Timestamp).toDateString() === new Date().toDateString()).length;
+  const unique     = new Set(leads.map(l => (l.Email||'').toLowerCase())).size;
+  document.getElementById('statsRow').innerHTML = [
+    ['Unique leads', unique], ['Check sessions', total],
+    ['Today', today], ['Avg score', avgScore ? avgScore + '/100' : '—'],
+  ].map(([lbl, val]) => `<div class="stat-card"><div class="stat-val">${val}</div><div class="stat-lbl">${lbl}</div></div>`).join('');
+}
+
+function applyFilter() {
+  const q = (document.getElementById('filterInput').value || '').toLowerCase();
+  const filtered = q ? allLeads.filter(l =>
+    ['Email','Name','Company','Role','Hotel URL'].some(k => (l[k]||'').toLowerCase().includes(q)))
+    : allLeads;
+  renderTable(filtered);
+}
+
+function renderTable(leads) {
+  const cols = [
+    {key:'Timestamp',label:'Date'},{key:'Email',label:'Email'},{key:'Name',label:'Name'},
+    {key:'Company',label:'Property'},{key:'Role',label:'Role'},
+    {key:'Hotel URL',label:'Hotel Checked'},{key:'Score',label:'Score'},{key:'Grade',label:'Grade'},
+  ];
+  if (!leads.length) {
+    document.getElementById('tableContainer').innerHTML = `<div class="empty-state"><div class="empty-icon">&#9711;</div><div class="empty-title">No leads yet</div><div class="empty-sub">Leads appear here as hotels are analysed.<br>Make sure the backend is configured.</div></div>`;
+    return;
+  }
+  const sorted = [...leads].sort((a,b) => {
+    const av = a[sortKey]||'', bv = b[sortKey]||'';
+    return (sortAsc ? 1 : -1) * (av < bv ? -1 : av > bv ? 1 : 0);
+  });
+  const sc = s => s >= 70 ? 'score-high' : s >= 40 ? 'score-mid' : 'score-low';
+  const fd = ts => {
+    try { const d=new Date(ts); return d.toLocaleDateString('en-GB',{day:'2-digit',month:'short',year:'numeric'})+'<br/><span style="opacity:.55;font-size:.72rem">'+d.toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit'})+'</span>'; }
+    catch { return ts||''; }
+  };
+  const rows = sorted.map(l => `<tr>
+    <td class="td-date">${fd(l.Timestamp)}</td>
+    <td class="td-email">${esc(l.Email||'')}</td>
+    <td>${esc(l.Name||'')}</td>
+    <td>${esc(l.Company||'')}</td>
+    <td>${esc(l.Role||'')}</td>
+    <td class="td-url">${esc((l['Hotel URL']||'').replace(/^https?:\/\//,''))}</td>
+    <td>${l.Score?`<span class="score-pill ${sc(+l.Score)}">${l.Score}/100</span>`:'—'}</td>
+    <td>${l.Grade||'—'}</td>
+  </tr>`).join('');
+  const ths = cols.map(c => `<th onclick="setSort('${c.key}')">${c.label}${c.key===sortKey?(sortAsc?' ↑':' ↓'):''}</th>`).join('');
+  document.getElementById('tableContainer').innerHTML = `<table><thead><tr>${ths}</tr></thead><tbody>${rows}</tbody></table>`;
+}
+
+function setSort(k) { sortAsc = sortKey===k ? !sortAsc : false; sortKey=k; applyFilter(); }
+
+function exportCsv() {
+  if (!allLeads.length) return;
+  const cols = ['Timestamp','Email','Name','Company','Role','Hotel URL','Score','Grade'];
+  const csv = [cols.join(','), ...allLeads.map(l => cols.map(c => `"${(l[c]||'').toString().replace(/"/g,'""')}"`).join(','))].join('\n');
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(new Blob([csv],{type:'text/csv'}));
+  a.download = `agentcheck-leads-${new Date().toISOString().slice(0,10)}.csv`;
+  a.click();
+}
+
+function signOut() {
+  document.getElementById('dashSection').classList.add('hidden');
+  document.getElementById('loginSection').classList.remove('hidden');
+  document.getElementById('dashPwd').value = '';
+}
+
+function esc(s) { return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+</script>
+</body>
+</html>
