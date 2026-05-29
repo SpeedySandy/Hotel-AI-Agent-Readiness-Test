@@ -1,11 +1,10 @@
-// ── Configuration ────────────────────────────────────────────────────────────
-// After deploying gas-backend.js to Google Apps Script, paste the web app URL:
+// ── Configuration ────────────────────────────────────────────────────────────────────────────
 const LEADS_ENDPOINT   = ''; // 'https://script.google.com/macros/s/YOUR_ID/exec'
 const OWNER_EMAIL      = 'sandro.testafori@oracle.com';
 const OWNER_NAME       = 'Sandro Testafori';
 const OWNER_TITLE      = 'Account Manager · Oracle Hospitality';
 
-// ── User / registration ───────────────────────────────────────────────────────
+// ── User / registration ───────────────────────────────────────────────────────────────────────
 
 function getUser() {
   try { return JSON.parse(localStorage.getItem('agentcheck_user') || 'null'); }
@@ -49,7 +48,7 @@ function postLead(data) {
   }).catch(() => {});
 }
 
-// ── Categories ────────────────────────────────────────────────────────────────
+// ── Categories ────────────────────────────────────────────────────────────────────────────
 
 const CATEGORIES = [
   { id: 'foundation',      name: 'Foundation',             icon: '◈', weight: 0.10,
@@ -66,17 +65,19 @@ const CATEGORIES = [
     checkIds: ['https','privacy','accessibility'] },
 ];
 
-// ── Fetch via CORS proxy (races 3 independent services) ──────────────────────
+// ── Fetch via CORS proxy (races 3 independent services) ───────────────────────────
 
 async function proxyFetch(url, ms = 15000) {
   const t0 = Date.now();
 
+  // corsproxy.io expects the raw URL after "?" — NOT encodeURIComponent
   const viaCorsproxy = fetch(`https://corsproxy.io/?${url}`)
     .then(async res => {
       if (!res.ok) throw new Error('HTTP ' + res.status);
       return { data: await res.text(), status: res.status, elapsed: Date.now() - t0 };
     });
 
+  // allorigins returns JSON-wrapped response
   const viaAllorigins = fetch(`https://api.allorigins.win/get?url=${encodeURIComponent(url)}`)
     .then(async res => {
       if (!res.ok) throw new Error('HTTP ' + res.status);
@@ -84,6 +85,7 @@ async function proxyFetch(url, ms = 15000) {
       return { data: j.contents || '', status: j.status?.http_code ?? 200, elapsed: Date.now() - t0 };
     });
 
+  // codetabs returns raw response — third independent service
   const viaCodetabs = fetch(`https://api.codetabs.com/v1/proxy/?quest=${encodeURIComponent(url)}`)
     .then(async res => {
       if (!res.ok) throw new Error('HTTP ' + res.status);
@@ -106,7 +108,7 @@ function normalizeUrl(raw) {
   try { return new URL(raw).origin; } catch { return null; }
 }
 
-// ── Schema helpers ────────────────────────────────────────────────────────────
+// ── Schema helpers ────────────────────────────────────────────────────────────────────────
 
 function extractSchemas(html) {
   const out = [];
@@ -124,7 +126,7 @@ function findType(schemas, ...types) {
   return schemas.find(s => types.some(t => ('' + (s['@type']||'')).toLowerCase().includes(t.toLowerCase())));
 }
 
-// ── Checks ────────────────────────────────────────────────────────────────────
+// ── Checks ────────────────────────────────────────────────────────────────────────────────
 
 async function runChecks(baseUrl) {
   const updateRow = (key, statusText, ok) => {
@@ -229,7 +231,7 @@ async function runChecks(baseUrl) {
   ];
 }
 
-// ── Scoring ───────────────────────────────────────────────────────────────────
+// ── Scoring ───────────────────────────────────────────────────────────────────────────────
 
 function computeScore(checks) {
   const byId = Object.fromEntries(checks.map(c => [c.id, c]));
@@ -251,7 +253,7 @@ function computeScore(checks) {
   return { percentage, grade, gradeLabel, catResults };
 }
 
-// ── Summary ───────────────────────────────────────────────────────────────────
+// ── Summary ───────────────────────────────────────────────────────────────────────────────
 
 function generateSummary(baseUrl, checks, pct) {
   const domain = new URL(baseUrl).hostname.replace(/^www\./,'');
@@ -273,7 +275,7 @@ function generateSummary(baseUrl, checks, pct) {
   return `${domain} has ${strengths.length ? 'basic technical infrastructure with ' + strengths.join(', ') : 'minimal AI agent readiness'}, but lacks essential features. Critical missing elements include ${mt}${byId['mcp-server']?.status !== 'pass' ? ' and MCP server support' : ''}.`;
 }
 
-// ── Recommendations ───────────────────────────────────────────────────────────
+// ── Recommendations ─────────────────────────────────────────────────────────────────────────
 
 function generateRecs(baseUrl, checks) {
   const domain = new URL(baseUrl).hostname;
@@ -327,14 +329,14 @@ function generateRecs(baseUrl, checks) {
   return { weeks, quarters, years };
 }
 
-// ── UI helpers ────────────────────────────────────────────────────────────────
+// ── UI helpers ────────────────────────────────────────────────────────────────────────────
 
 function setUrl(d) { document.getElementById('urlInput').value = d; document.getElementById('urlInput').focus(); }
 function goBack() { document.getElementById('results').classList.add('hidden'); document.getElementById('landing').classList.remove('hidden'); }
 function colorFor(p) { return p >= 70 ? 'var(--pass)' : p >= 40 ? 'var(--warn)' : 'var(--fail)'; }
 function escHtml(s) { return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
 
-// ── Entry ─────────────────────────────────────────────────────────────────────
+// ── Entry ──────────────────────────────────────────────────────────────────────────────────
 
 document.addEventListener('DOMContentLoaded', () => {
   document.getElementById('urlInput').addEventListener('keydown', e => { if (e.key === 'Enter') runCheck(); });
@@ -389,7 +391,7 @@ async function runCheck() {
   }
 }
 
-// ── Render ────────────────────────────────────────────────────────────────────
+// ── Render ───────────────────────────────────────────────────────────────────────────────
 
 function renderResults({ url, checks, percentage, grade, gradeLabel, catResults, summary, recs }) {
   document.getElementById('scorePct').textContent = percentage;
