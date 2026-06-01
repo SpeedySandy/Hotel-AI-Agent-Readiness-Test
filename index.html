@@ -82,6 +82,7 @@
     </div>
 
     <div class="revenue-section" id="revenueSection"></div>
+    <div id="oracleCtaSection"></div>
   </section>
 
   <!-- Loading overlay -->
@@ -95,6 +96,23 @@
   <footer class="footer">
     <span>Live HTTP checks &bull; AI analysis. Skipped items excluded from score.</span>
   </footer>
+
+  <!-- Registration modal -->
+  <div id="regModal" class="reg-modal hidden">
+    <div class="reg-card">
+      <div class="reg-logo">&#9711; ORACLE HOSPITALITY</div>
+      <h2 class="reg-title">Unlock your free AI readiness report</h2>
+      <p class="reg-sub">See exactly how AI agents will discover, compare, and book your hotel &mdash; with a personalised action plan.</p>
+      <div class="reg-fields">
+        <input type="text"  id="regName"    class="reg-input" placeholder="First name" autocomplete="given-name" />
+        <input type="email" id="regEmail"   class="reg-input" placeholder="Work email *" autocomplete="email" />
+        <input type="text"  id="regCompany" class="reg-input" placeholder="Hotel / property name" />
+        <input type="text"  id="regRole"    class="reg-input" placeholder="Your role (e.g. Revenue Manager)" />
+      </div>
+      <button class="reg-btn" onclick="registerUser()">Get my free report &rarr;</button>
+      <p class="reg-legal">By submitting you agree to be contacted by Oracle Hospitality. <a href="mailto:sandro.testafori@oracle.com">Opt&nbsp;out</a>.</p>
+    </div>
+  </div>
 
   <script src="app.js"></script>
 </body>

@@ -1,3 +1,55 @@
+// ── Configuration ────────────────────────────────────────────────────────────────────────────
+const LEADS_ENDPOINT   = 'https://script.google.com/macros/s/AKfycbzUUpHerJBf12PI-BobJf-XRuYMsFJ3sNqtXE-L1CwsOYZLVB7UaVLb8JP8Yw4k4b0CGw/exec';
+const OWNER_EMAIL      = 'sandro.christofori@oracle.com';
+const OWNER_NAME       = 'Sandro Christofori';
+const OWNER_TITLE      = 'Sales Account Manager · Oracle Hospitality';
+
+// ── User / registration ───────────────────────────────────────────────────────────────────────
+
+function getUser() {
+  try { return JSON.parse(localStorage.getItem('agentcheck_user') || 'null'); }
+  catch { return null; }
+}
+
+function showRegModal() {
+  const m = document.getElementById('regModal');
+  if (m) { m.classList.remove('hidden'); document.getElementById('regName').focus(); }
+}
+
+function registerUser() {
+  const email   = (document.getElementById('regEmail').value || '').trim();
+  const name    = (document.getElementById('regName').value || '').trim();
+  const company = (document.getElementById('regCompany').value || '').trim();
+  const role    = (document.getElementById('regRole').value || '').trim();
+
+  const emailEl = document.getElementById('regEmail');
+  emailEl.classList.remove('input-error');
+  if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+    emailEl.classList.add('input-error');
+    emailEl.focus();
+    return;
+  }
+
+  const user = { email, name, company, role, ts: Date.now() };
+  localStorage.setItem('agentcheck_user', JSON.stringify(user));
+  postLead(user);
+  document.getElementById('regModal').classList.add('hidden');
+
+  const url = document.getElementById('urlInput').value.trim();
+  if (url) runCheck();
+}
+
+function postLead(data) {
+  if (!LEADS_ENDPOINT) return;
+  fetch(LEADS_ENDPOINT, {
+    method: 'POST', mode: 'no-cors',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ ...data, source: location.hostname }),
+  }).catch(() => {});
+}
+
+// ── Categories ────────────────────────────────────────────────────────────────────────────
+
 const CATEGORIES = [
   { id: 'foundation',      name: 'Foundation',             icon: '◈', weight: 0.10,
     checkIds: ['robots','llms','sitemap','markdown'] },
@@ -13,7 +65,7 @@ const CATEGORIES = [
     checkIds: ['https','privacy','accessibility'] },
 ];
 
-// ── Fetch via CORS proxy (races 3 independent services) ──────────────────────
+// ── Fetch via CORS proxy (races 3 independent services) ───────────────────────────
 
 async function proxyFetch(url, ms = 15000) {
   const t0 = Date.now();
@@ -56,7 +108,7 @@ function normalizeUrl(raw) {
   try { return new URL(raw).origin; } catch { return null; }
 }
 
-// ── Schema helpers ────────────────────────────────────────────────────────────
+// ── Schema helpers ────────────────────────────────────────────────────────────────────────
 
 function extractSchemas(html) {
   const out = [];
@@ -74,7 +126,7 @@ function findType(schemas, ...types) {
   return schemas.find(s => types.some(t => ('' + (s['@type']||'')).toLowerCase().includes(t.toLowerCase())));
 }
 
-// ── Checks ────────────────────────────────────────────────────────────────────
+// ── Checks ────────────────────────────────────────────────────────────────────────────────
 
 async function runChecks(baseUrl) {
   const updateRow = (key, statusText, ok) => {
@@ -179,7 +231,7 @@ async function runChecks(baseUrl) {
   ];
 }
 
-// ── Scoring ───────────────────────────────────────────────────────────────────
+// ── Scoring ───────────────────────────────────────────────────────────────────────────────
 
 function computeScore(checks) {
   const byId = Object.fromEntries(checks.map(c => [c.id, c]));
@@ -201,7 +253,7 @@ function computeScore(checks) {
   return { percentage, grade, gradeLabel, catResults };
 }
 
-// ── Summary ───────────────────────────────────────────────────────────────────
+// ── Summary ───────────────────────────────────────────────────────────────────────────────
 
 function generateSummary(baseUrl, checks, pct) {
   const domain = new URL(baseUrl).hostname.replace(/^www\./,'');
@@ -223,7 +275,7 @@ function generateSummary(baseUrl, checks, pct) {
   return `${domain} has ${strengths.length ? 'basic technical infrastructure with ' + strengths.join(', ') : 'minimal AI agent readiness'}, but lacks essential features. Critical missing elements include ${mt}${byId['mcp-server']?.status !== 'pass' ? ' and MCP server support' : ''}.`;
 }
 
-// ── Recommendations ───────────────────────────────────────────────────────────
+// ── Recommendations ─────────────────────────────────────────────────────────────────────────
 
 function generateRecs(baseUrl, checks) {
   const domain = new URL(baseUrl).hostname;
@@ -277,20 +329,22 @@ function generateRecs(baseUrl, checks) {
   return { weeks, quarters, years };
 }
 
-// ── UI helpers ────────────────────────────────────────────────────────────────
+// ── UI helpers ────────────────────────────────────────────────────────────────────────────
 
 function setUrl(d) { document.getElementById('urlInput').value = d; document.getElementById('urlInput').focus(); }
 function goBack() { document.getElementById('results').classList.add('hidden'); document.getElementById('landing').classList.remove('hidden'); }
 function colorFor(p) { return p >= 70 ? 'var(--pass)' : p >= 40 ? 'var(--warn)' : 'var(--fail)'; }
 function escHtml(s) { return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
 
-// ── Entry ─────────────────────────────────────────────────────────────────────
+// ── Entry ──────────────────────────────────────────────────────────────────────────────────
 
 document.addEventListener('DOMContentLoaded', () => {
   document.getElementById('urlInput').addEventListener('keydown', e => { if (e.key === 'Enter') runCheck(); });
 });
 
 async function runCheck() {
+  if (!getUser()) { showRegModal(); return; }
+
   const input = document.getElementById('urlInput');
   const raw   = input.value.trim();
   if (!raw) { input.focus(); return; }
@@ -328,6 +382,7 @@ async function runCheck() {
     const recs    = generateRecs(baseUrl, checks);
 
     renderResults({ url: baseUrl, checks, percentage, grade, gradeLabel, catResults, summary, recs });
+    postLead({ ...getUser(), hotelUrl: baseUrl, score: percentage, grade });
   } catch (err) {
     alert('Check failed: ' + err.message);
   } finally {
@@ -336,7 +391,7 @@ async function runCheck() {
   }
 }
 
-// ── Render ────────────────────────────────────────────────────────────────────
+// ── Render ───────────────────────────────────────────────────────────────────────────────
 
 function renderResults({ url, checks, percentage, grade, gradeLabel, catResults, summary, recs }) {
   document.getElementById('scorePct').textContent = percentage;
@@ -404,9 +459,51 @@ function renderResults({ url, checks, percentage, grade, gradeLabel, catResults,
       <div class="metric"><div class="metric-val">${gap} pts</div><div class="metric-label">gap to Agent-Ready</div></div>
     </div>`;
 
+  document.getElementById('oracleCtaSection').innerHTML = buildOracleCta(url, checks, percentage);
   document.getElementById('landing').classList.add('hidden');
   document.getElementById('results').classList.remove('hidden');
   window.scrollTo(0,0);
+}
+
+function buildOracleCta(url, checks, percentage) {
+  const user   = getUser();
+  const domain = new URL(url).hostname.replace(/^www\./, '');
+  const byId   = Object.fromEntries(checks.map(c => [c.id, c]));
+  const gaps   = checks.filter(c => c.status === 'fail').length;
+
+  const caps = [
+    byId['ucp']?.status !== 'pass'              && 'Certified Google UCP integration — native in Opera Cloud',
+    byId['availability-api']?.status !== 'pass' && 'Real-time availability APIs via Oracle Distribution Services',
+    (byId['schema-hotel']?.status !== 'pass' ||
+     byId['schema-room']?.status !== 'pass')    && 'Auto-publish Hotel & Room schema from your PMS data',
+    byId['direct-booking']?.status !== 'pass'   && 'Direct booking engine with Best Rate Guarantee tools',
+    byId['payment']?.status !== 'pass'          && 'Oracle Payment Interface (OPI) — multi-gateway, PCI-ready',
+    byId['faq-schema']?.status !== 'pass'       && 'AI-readable guest FAQ via Oracle Experience Cloud',
+  ].filter(Boolean);
+
+  const userName = user?.name || '';
+  const subj = encodeURIComponent(`Hotel AI Readiness — ${domain} — ${percentage}/100`);
+  const body = encodeURIComponent(
+    `Hi Sandro,\n\nI just used the Oracle Hotel AI Readiness Checker to analyse ${url}.\n\nScore: ${percentage}/100 · ${gaps} gaps found\n\nI'd love to learn how Oracle Opera Cloud can help us close these gaps.\n\nBest regards,\n${userName}`
+  );
+
+  const capsHtml = caps.length
+    ? `<ul class="oracle-caps">${caps.map(c => `<li>${c}</li>`).join('')}</ul>`
+    : '';
+
+  return `
+    <div class="oracle-cta-box">
+      <div class="oracle-cta-inner">
+        <div class="oracle-wordmark">ORACLE HOSPITALITY</div>
+        <h3 class="oracle-cta-heading">Close the gap with Opera Cloud</h3>
+        <p class="oracle-cta-body">Oracle Opera Cloud directly addresses ${gaps} of the ${checks.filter(c=>c.status!=='skip').length} verifiable gaps found above${caps.length ? ':' : '.'}</p>
+        ${capsHtml}
+        <a class="oracle-cta-btn" href="mailto:${OWNER_EMAIL}?subject=${subj}&body=${body}">
+          &#9993;&nbsp; Book a 30-min call with Sandro
+        </a>
+        <p class="oracle-contact">${OWNER_NAME} &middot; ${OWNER_TITLE} &middot; <a href="mailto:${OWNER_EMAIL}">${OWNER_EMAIL}</a></p>
+      </div>
+    </div>`;
 }
 
 function renderRecs({ weeks, quarters, years }) {
