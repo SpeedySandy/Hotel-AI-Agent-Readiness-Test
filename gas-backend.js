@@ -14,8 +14,8 @@
 //  7. Paste the same URL as LEADS_ENDPOINT in dashboard.html
 // ═══════════════════════════════════════════════════════════════════════════
 
-const SPREADSHEET_ID     = 'YOUR_GOOGLE_SPREADSHEET_ID'; // ← replace
-const DASHBOARD_PASSWORD = 'oracle2024';                  // ← change this
+const SPREADSHEET_ID     = 'https://docs.google.com/spreadsheets/d/1-1Rmllu_ZXUI9E7ehNq8_m9NcMxMz9o4nSEdOKBOTww/edit?usp=drivesdk'; // ← replace
+const DASHBOARD_PASSWORD = 'oracle2026';                  // ← change this
 
 // ── Receive a new lead (called by app.js with mode:no-cors) ─────────────────────
 
