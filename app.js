@@ -1,4 +1,4 @@
-// ── Configuration ────────────────────────────────────────────────────────────────────────────
+// ── Configuration ──────────────────────────────────────────────────────────────────────────────────────────────────────
 const LEADS_ENDPOINT   = 'https://script.google.com/macros/s/AKfycbzUUpHerJBf12PI-BobJf-XRuYMsFJ3sNqtXE-L1CwsOYZLVB7UaVLb8JP8Yw4k4b0CGw/exec';
 const OWNER_EMAIL      = 'sandro.christofori@oracle.com';
 const OWNER_NAME       = 'Sandro Christofori';
@@ -65,9 +65,9 @@ const CATEGORIES = [
     checkIds: ['https','privacy','accessibility'] },
 ];
 
-// ── Fetch via CORS proxy (races 3 independent services) ───────────────────────────
+// ── Fetch via CORS proxy (races 5 independent services) ───────────────────────────
 
-async function proxyFetch(url, ms = 15000) {
+async function proxyFetch(url, ms = 20000) {
   const t0 = Date.now();
 
   // corsproxy.io expects the raw URL after "?" — NOT encodeURIComponent
@@ -77,7 +77,7 @@ async function proxyFetch(url, ms = 15000) {
       return { data: await res.text(), status: res.status, elapsed: Date.now() - t0 };
     });
 
-  // allorigins returns JSON-wrapped response
+  // allorigins JSON-wrapped response
   const viaAllorigins = fetch(`https://api.allorigins.win/get?url=${encodeURIComponent(url)}`)
     .then(async res => {
       if (!res.ok) throw new Error('HTTP ' + res.status);
@@ -85,8 +85,22 @@ async function proxyFetch(url, ms = 15000) {
       return { data: j.contents || '', status: j.status?.http_code ?? 200, elapsed: Date.now() - t0 };
     });
 
-  // codetabs returns raw response — third independent service
+  // allorigins raw — same service, different endpoint, returns content directly
+  const viaAlloriginsRaw = fetch(`https://api.allorigins.win/raw?url=${encodeURIComponent(url)}`)
+    .then(async res => {
+      if (!res.ok) throw new Error('HTTP ' + res.status);
+      return { data: await res.text(), status: res.status, elapsed: Date.now() - t0 };
+    });
+
+  // codetabs returns raw response
   const viaCodetabs = fetch(`https://api.codetabs.com/v1/proxy/?quest=${encodeURIComponent(url)}`)
+    .then(async res => {
+      if (!res.ok) throw new Error('HTTP ' + res.status);
+      return { data: await res.text(), status: res.status, elapsed: Date.now() - t0 };
+    });
+
+  // thingproxy — fifth independent service
+  const viaThingproxy = fetch(`https://thingproxy.freeboard.io/fetch/${url}`)
     .then(async res => {
       if (!res.ok) throw new Error('HTTP ' + res.status);
       return { data: await res.text(), status: res.status, elapsed: Date.now() - t0 };
@@ -94,7 +108,7 @@ async function proxyFetch(url, ms = 15000) {
 
   try {
     return await Promise.race([
-      Promise.any([viaCorsproxy, viaAllorigins, viaCodetabs]),
+      Promise.any([viaCorsproxy, viaAllorigins, viaAlloriginsRaw, viaCodetabs, viaThingproxy]),
       new Promise((_, r) => setTimeout(() => r(new Error('timeout')), ms)),
     ]);
   } catch (e) {
