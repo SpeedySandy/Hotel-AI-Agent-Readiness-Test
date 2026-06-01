@@ -1,8 +1,8 @@
 // ── Configuration ────────────────────────────────────────────────────────────────────────────
-const LEADS_ENDPOINT   = ''; // 'https://script.google.com/macros/s/YOUR_ID/exec'
-const OWNER_EMAIL      = 'sandro.testafori@oracle.com';
-const OWNER_NAME       = 'Sandro Testafori';
-const OWNER_TITLE      = 'Account Manager · Oracle Hospitality';
+const LEADS_ENDPOINT   = 'https://script.google.com/macros/s/AKfycbzUUpHerJBf12PI-BobJf-XRuYMsFJ3sNqtXE-L1CwsOYZLVB7UaVLb8JP8Yw4k4b0CGw/exec';
+const OWNER_EMAIL      = 'sandro.christofori@oracle.com';
+const OWNER_NAME       = 'Sandro Christofori';
+const OWNER_TITLE      = 'Sales Account Manager · Oracle Hospitality';
 
 // ── User / registration ───────────────────────────────────────────────────────────────────────
 
