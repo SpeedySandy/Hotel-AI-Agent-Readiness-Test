@@ -1,21 +1,5 @@
-// ═══════════════════════════════════════════════════════════════════════════
-// AgentCheck — Google Apps Script lead-capture backend
-//
-// SETUP (5 minutes):
-//  1. Create a new Google Sheet at sheets.google.com
-//     Copy the long ID from the URL and paste it below as SPREADSHEET_ID
-//  2. Go to script.google.com → New Project → paste this entire file
-//  3. Set SPREADSHEET_ID and DASHBOARD_PASSWORD below
-//  4. Click Deploy → New Deployment → Web App
-//       Execute as: Me
-//       Who has access: Anyone
-//  5. Copy the web app URL
-//  6. Paste it as LEADS_ENDPOINT in app.js
-//  7. Paste the same URL as LEADS_ENDPOINT in dashboard.html
-// ═══════════════════════════════════════════════════════════════════════════
-
-const SPREADSHEET_ID     = 'https://docs.google.com/spreadsheets/d/1-1Rmllu_ZXUI9E7ehNq8_m9NcMxMz9o4nSEdOKBOTww/edit?usp=drivesdk'; // ← replace
-const DASHBOARD_PASSWORD = 'oracle2026';                  // ← change this
+const SPREADSHEET_ID     = 'https://docs.google.com/spreadsheets/d/1-1Rmllu_ZXUI9E7ehNq8_m9NcMxMz9o4nSEdOKBOTww/edit?usp=drivesdk';
+const DASHBOARD_PASSWORD = 'oracle2026';
 
 // ── Receive a new lead (called by app.js with mode:no-cors) ─────────────────────
 
