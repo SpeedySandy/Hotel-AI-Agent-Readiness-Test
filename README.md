@@ -6,13 +6,22 @@ notes, drafts a briefing into your inbox, and archives it here.
 
 ## How it runs
 
-- **Scheduled** — A scheduled source at code.claude.com fires daily,
-  runs `/briefing`, and exits. See `docs/setup.md`.
-- **On demand** — Open a session in this repo and run `/briefing` at
-  any time.
-- **Quick capture** — Run `/capture <text>` at any time to drop a
-  reminder into Apple Reminders. Natural-language dates supported
-  ("by Friday", "tomorrow", "next Monday").
+- **Scheduled briefing** — A scheduled source at code.claude.com fires
+  daily, runs `/briefing`, and exits. See `docs/setup.md`.
+- **On demand** — Open a session in this repo and run any of the
+  commands below at any time.
+
+## Commands
+
+| Command | What it does |
+|---|---|
+| `/briefing` | Morning briefing → Gmail draft + repo archive |
+| `/capture <text>` | Create an Apple Reminder (NL dates + recurrence) |
+| `/done <text>` | Mark a reminder complete by exact summary |
+| `/schedule <text>` | Create a Google Calendar event (NL) |
+| `/findtime <text>` | Suggest meeting times across attendees |
+| `/reply <text>` | Draft a Gmail reply to an existing thread |
+| `/note <text>` | Capture a thought into the Apple Notes inbox (via Drive → Mac) |
 
 ## What it does
 
@@ -38,36 +47,48 @@ See `docs/setup.md`. You need:
 ```
 .claude/
   skills/morning-briefing/SKILL.md   the brain — gather, synthesize, deliver, archive
-  commands/briefing.md               /briefing slash command
-  commands/capture.md                /capture slash command (write to Reminders)
+  commands/briefing.md               /briefing
+  commands/capture.md                /capture (Reminders write)
+  commands/done.md                   /done (Reminders complete)
+  commands/schedule.md               /schedule (Calendar event)
+  commands/findtime.md               /findtime (suggest_time)
+  commands/reply.md                  /reply (Gmail reply draft)
+  commands/note.md                   /note (Notes inbox via Drive)
 scripts/
-  reminders.py                       CalDAV helper, JSON stdout
+  reminders.py                       CalDAV CLI: list / create / complete / edit / lists
+  md_to_html.py                      markdown → styled HTML (for email htmlBody)
 docs/
   setup.md                           one-time setup walkthrough
-  notes-export.applescript.md        Mac-side AppleScript outline
+  notes-export.applescript.md        Mac → Drive (read side, for briefing)
+  notes-inbox.applescript.md         Drive → Mac (write side, for /note)
 briefings/                           daily archive lives here
-requirements.txt                     caldav, vobject
+requirements.txt                     caldav, icalendar, markdown
 ```
 
 ## Roadmap
 
 ### Shipped
 
-- v1: Read-only briefing → Gmail draft + repo archive.
-- v2.1: Apple Reminders **write** capability + `/capture` slash
-  command. Idempotent (same summary + due in the same list won't
-  create a duplicate).
+- **v1** — Read-only briefing → Gmail draft + repo archive.
+- **v2.1** — Apple Reminders write + `/capture`. Idempotent.
+- **v2.2** — Personal-OS surface area expansion:
+  - `/done` (complete reminders) and `reminders.py edit` (rename / due / rrule)
+  - RRULE recurrence in `/capture` (NL → RFC 5545)
+  - `/schedule` (Calendar event create) and `/findtime` (suggest_time)
+  - `/reply` (Gmail reply draft against an existing thread)
+  - `/note` (Notes inbox via Drive → Mac launchd reverse-sync)
+  - Briefing now produces HTML-rendered Gmail body and a
+    "Suggested captures" section (copy-pasteable `/capture` lines)
 
 ### Next up
 
-- Complete / edit existing reminders
-- Recurring reminders (RRULE) in `/capture`
-- Draft reply emails for surfaced inbox items
-- Auto-suggest captures from briefing-identified action items
-- Write back to Apple Notes
-- Create or modify calendar events
-- Meeting-time suggestions and scheduling logic
-- Sources beyond the five above (Slack, Linear, Notion, …)
-- HTML-rendered email body
-- Embedding-based meeting matching for Granola
-- Multi-user support
+- Auto-execute captures from briefing (opt-in, e.g. `/briefing --capture`)
+- Edit / cancel existing calendar events
+- Recurring calendar events via NL in `/schedule`
+- `/done` fuzzy matching with confirmation
+- Sources requiring new MCP servers: Slack, Linear, Notion
+- Embedding-based meeting matching for Granola (replace title match)
+- Multi-user support (currently single Apple ID + Gmail account)
+- Inline action buttons in the briefing email body (mailto: links
+  prefilled with `/done`, `/reply`, etc. on a future Claude Code
+  email-handler URL scheme)

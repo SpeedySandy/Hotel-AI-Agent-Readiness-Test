@@ -1,2 +1,5 @@
 caldav>=1.3.9
-vobject>=0.9.8
+markdown>=3.5
+# icalendar is a transitive dep of caldav and is used directly for
+# VTODO construction; pinning here for clarity.
+icalendar>=5.0

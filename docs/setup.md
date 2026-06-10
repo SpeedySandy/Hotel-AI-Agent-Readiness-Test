@@ -68,6 +68,16 @@ launchctl load ~/Library/LaunchAgents/com.user.notes-export.plist
 Wait a few minutes and confirm `snapshot.md` appears in
 `claude-notes-export/` on Drive.
 
+### Reverse-sync (Drive → Apple Notes) — needed for `/note`
+
+If you want to use `/note` to capture into Apple Notes from the cloud
+session, you also need a second Mac-side job that pulls captured
+sections back into Notes. See `docs/notes-inbox.applescript.md`. The
+folder convention is `claude-notes-inbox/` on Drive (separate from
+the `claude-notes-export/` folder used for reading). Set up an
+analogous launchd plist (`com.user.notes-import.plist`, also 30 min
+interval).
+
 ## 3. Schedule the morning trigger
 
 In the Claude Code on the web UI:
@@ -104,6 +114,19 @@ environment the schedule uses.
    confirm it shows up in Apple Reminders. Run the same `/capture`
    again — you should get `Already in <list>: ...` (idempotency
    check fired).
+8. Test done: `/done Test reminder from Claude` — should mark the
+   one you just created as complete.
+9. Test recurrence: `/capture Daily standup every weekday` →
+   confirm it shows up as recurring weekday in Reminders.
+10. Test calendar: `/schedule Test event tomorrow 3pm for 15 min` →
+    appears on your primary Google Calendar.
+11. Test find time: `/findtime 30 min tomorrow afternoon` → returns
+    up to 5 slot suggestions.
+12. Test reply: `/reply <some keyword from a recent email>` →
+    creates a Drafts entry inline-replying to the thread.
+13. Test note: `/note Test thought from Claude` → within ~30 min
+    appears in the "Claude Inbox" folder of Apple Notes (requires
+    the reverse-sync launchd job from `notes-inbox.applescript.md`).
 
 Only then enable the scheduled trigger.
 

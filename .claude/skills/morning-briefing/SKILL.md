@@ -115,6 +115,17 @@ Produce a markdown briefing with these sections, in this order:
 - <distilled bullet>
 …
 
+## Suggested captures
+<Identify 3–5 candidate todos from the data above — action items
+implied by the surfaced emails, TODO-style lines from the Notes
+snapshot, anything you would write down for the user. Format each
+as a copy-pasteable /capture invocation so the user can act with
+one click.>
+- `/capture Email Bob the revised Q3 numbers by Friday` — from Bob's email
+- `/capture Review draft contract from John` — from John's email
+- `/capture Plan family trip July weekend` — from Notes
+(If no candidates, write `_None today._`)
+
 ## Suggested plan
 - 09:00–09:30  Triage inbox: <X> and <Y>
 - 09:30–10:30  Deep work: <thing>
@@ -129,16 +140,33 @@ than omitting the heading.
 The **Suggested plan** must honor real calendar events as fixed blocks
 and propose work blocks for top emails and reminders around them.
 
+The **Suggested captures** section must NOT auto-create reminders —
+it surfaces candidates as `/capture ...` strings the user can run.
+
 ## Phase C — Deliver
 
 1. **Idempotency check** — use the Gmail MCP `search_threads` with:
    `in:drafts subject:"Morning briefing — <YYYY-MM-DD>"`
    If a matching draft exists, **skip** draft creation (do not create
    a second one) and proceed to Phase D.
-2. Otherwise, Gmail MCP `create_draft`:
-   - `to`: `sandro88c@gmail.com`
+
+2. **Render HTML** — pipe the markdown from Phase B through the
+   helper to produce a styled HTML body:
+
+   ```bash
+   python3 scripts/md_to_html.py <<'MARKDOWN_EOF'
+   <markdown content from Phase B>
+   MARKDOWN_EOF
+   ```
+
+   Capture stdout as the HTML body. If the helper fails (e.g.
+   `markdown` package missing), fall back to plain-text only.
+
+3. Gmail MCP `create_draft`:
+   - `to`: `["sandro88c@gmail.com"]`
    - `subject`: `Morning briefing — <YYYY-MM-DD>`
-   - `body`: the markdown from Phase B as a plain-text body
+   - `body`: the markdown from Phase B (plain-text alternative)
+   - `htmlBody`: the HTML from step 2 (rich version)
 
 ## Phase D — Archive
 
