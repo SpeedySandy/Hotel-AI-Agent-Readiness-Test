@@ -10,6 +10,9 @@ notes, drafts a briefing into your inbox, and archives it here.
   runs `/briefing`, and exits. See `docs/setup.md`.
 - **On demand** — Open a session in this repo and run `/briefing` at
   any time.
+- **Quick capture** — Run `/capture <text>` at any time to drop a
+  reminder into Apple Reminders. Natural-language dates supported
+  ("by Friday", "tomorrow", "next Monday").
 
 ## What it does
 
@@ -36,6 +39,7 @@ See `docs/setup.md`. You need:
 .claude/
   skills/morning-briefing/SKILL.md   the brain — gather, synthesize, deliver, archive
   commands/briefing.md               /briefing slash command
+  commands/capture.md                /capture slash command (write to Reminders)
 scripts/
   reminders.py                       CalDAV helper, JSON stdout
 docs/
@@ -45,10 +49,21 @@ briefings/                           daily archive lives here
 requirements.txt                     caldav, vobject
 ```
 
-## v2 candidates
+## Roadmap
 
-- Create / complete / edit reminders from the briefing
-- Draft reply emails for the surfaced inbox items
+### Shipped
+
+- v1: Read-only briefing → Gmail draft + repo archive.
+- v2.1: Apple Reminders **write** capability + `/capture` slash
+  command. Idempotent (same summary + due in the same list won't
+  create a duplicate).
+
+### Next up
+
+- Complete / edit existing reminders
+- Recurring reminders (RRULE) in `/capture`
+- Draft reply emails for surfaced inbox items
+- Auto-suggest captures from briefing-identified action items
 - Write back to Apple Notes
 - Create or modify calendar events
 - Meeting-time suggestions and scheduling logic

@@ -23,11 +23,18 @@ Verify in a session:
 
 ```bash
 pip install -r requirements.txt
-python3 scripts/reminders.py --due-through tomorrow --include-overdue \
+python3 scripts/reminders.py list --due-through tomorrow --include-overdue \
     --tz Europe/Berlin --json
 ```
 
 You should see JSON with a `reminders` array and `ok: true`.
+
+To see your available Reminders list names (handy if you want to
+pass `--list "<name>"` to `/capture`):
+
+```bash
+python3 scripts/reminders.py lists --json
+```
 
 ## 2. Apple Notes → Google Drive (Mac-side)
 
@@ -93,6 +100,10 @@ environment the schedule uses.
    - `briefings/<today>.md` was committed to `main`.
 6. Re-run `/briefing`. Confirm no second draft is created (the
    idempotency check skips it) and the archive file overwrites cleanly.
+7. Test capture: `/capture Test reminder from Claude tomorrow` and
+   confirm it shows up in Apple Reminders. Run the same `/capture`
+   again — you should get `Already in <list>: ...` (idempotency
+   check fired).
 
 Only then enable the scheduled trigger.
 

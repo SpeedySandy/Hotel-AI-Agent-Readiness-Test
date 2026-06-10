@@ -63,7 +63,7 @@ Use the Gmail MCP server.
 Run:
 
 ```bash
-python3 scripts/reminders.py --due-through tomorrow --include-overdue --tz Europe/Berlin --json
+python3 scripts/reminders.py list --due-through tomorrow --include-overdue --tz Europe/Berlin --json
 ```
 
 Parse stdout as JSON. If `ok: false`, the Reminders section must show
