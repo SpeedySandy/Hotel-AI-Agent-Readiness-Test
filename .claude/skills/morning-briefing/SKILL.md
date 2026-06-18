@@ -145,10 +145,12 @@ it surfaces candidates as `/capture ...` strings the user can run.
 
 ## Phase C — Deliver
 
-1. **Idempotency check** — use the Gmail MCP `search_threads` with:
-   `in:drafts subject:"Morning briefing — <YYYY-MM-DD>"`
-   If a matching draft exists, **skip** draft creation (do not create
-   a second one) and proceed to Phase D.
+1. **Idempotency check** — use the Gmail MCP `list_drafts` with query:
+   `subject:"Morning briefing — <YYYY-MM-DD>"`
+   If the response contains any draft, **skip** draft creation (do not
+   create a second one) and proceed to Phase D.
+   (Don't use `search_threads`; it excludes drafts by default and even
+   with `in:draft` is less reliable than `list_drafts` for this check.)
 
 2. **Render HTML** — pipe the markdown from Phase B through the
    helper to produce a styled HTML body:
